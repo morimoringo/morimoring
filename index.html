@@ -35,7 +35,18 @@
         <button id="sub" type="submit">追加</button>
     </form>
 
-    <ul id="expense-list"></ul>
+
+<div id="tab-container">
+    <input id="tab-normal" type="radio" name="TAB" class="tab-switch active" checked="checked" />
+    <label class="tab-label" for="tab-normal">月別</label>
+
+    <input id="tab-installment" type="radio" name="TAB" class="tab-switch" />
+    <label class="tab-label" for="tab-installment">分割</label>
+</div>
+
+
+    <ul class="expense-list" id="normal"></ul>
+    <ul class="expense-list hidden" id="installment"></ul>
 
 
     <script src="main.js"></script>
