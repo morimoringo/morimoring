@@ -52,6 +52,9 @@ textarea {
   -webkit-appearance: none; /* Safari・iOSの独自スタイル無効化 */
   appearance: none;
   border-radius: 0; /* 角丸解除 */
+  outline: none;
+  background-clip: padding-box;
+
 }
 
 input:-webkit-autofill,
