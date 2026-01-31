@@ -1,52 +1,103 @@
+// =======================================
+// ユーティリティ関数
+// =======================================
 function escapeHTML(str) {
-  if (str == null) return '';        // null や undefined のとき空文字
-  return String(str)                 // number でも確実に文字列化
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
+// =======================================
+// データ管理
+// =======================================
+let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+let editingId = null;
 
-// main.js
+function saveData() {
+    localStorage.setItem('expenses', JSON.stringify(expenses));
+}
+
+function isInstallment(expense) {
+    return expense.endDate && expense.firstDate !== expense.endDate;
+}
+
+function groupByMonth(expenses) {
+    const grouped = {};
+    expenses.forEach(exp => {
+        const end = exp.endDate ? new Date(exp.endDate) : new Date(exp.firstDate);
+        let current = new Date(new Date(exp.firstDate).getFullYear(), new Date(exp.firstDate).getMonth(), 1);
+
+        while (current <= end) {
+            const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+            if (!grouped[key]) grouped[key] = [];
+            if (!exp.hiddenMonths?.includes(key)) grouped[key].push(exp);
+            current.setMonth(current.getMonth() + 1);
+        }
+    });
+    return grouped;
+}
+
+function groupByExpense(expenses) {
+    const grouped = {};
+    expenses.forEach(exp => {
+        const key = exp.id;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(exp);
+    });
+    return grouped;
+}
+
+// =======================================
+// DOM要素
+// =======================================
 const form = document.getElementById('expense-form');
 const nameInput = document.getElementById('name');
 const amountInput = document.getElementById('amount');
 const firstDateInput = document.getElementById('first-date');
 const endDateInput = document.getElementById('end-date');
-const list = document.getElementById('expense-list');
-const totalDisplay = document.querySelector('.total');
+
+const tabNormal = document.getElementById('tab-normal');
+const tabInstallment = document.getElementById('tab-installment');
+const normalList = document.getElementById('normal');
+const installmentList = document.getElementById('installment');
+
 const message = document.getElementById('message');
 
-// ローカルストレージから読み込み
-let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
-let editingId = null; // 今編集中のID
+// =======================================
+// イベント系
+// =======================================
 
-// 初期表示
-renderList();
-
-
-// row, row2 両方の中の input を対象にする
-
-document.querySelectorAll('.row input, .row2 input').forEach(input => {
-  input.addEventListener('input', () => {
-    const colon = input.previousElementSibling;
-    const label = colon ? colon.previousElementSibling : null;
-    const labelParts = [label, colon].filter(Boolean);
-
-    // 空白を除いた文字列があるか判定（スペースだけでも空扱いにする）
-    const hasValue = input.value.trim().length > 0;
-
-    labelParts.forEach(el => {
-      el.style.color = hasValue ? '#df67bd' : '';
-    });
-  });
+// タブ切替
+tabNormal.addEventListener('click', () => {
+    tabNormal.classList.add('active');
+    tabInstallment.classList.remove('active');
+    normalList.style.display = 'block';
+    installmentList.style.display = 'none';
 });
 
+tabInstallment.addEventListener('click', () => {
+    tabInstallment.classList.add('active');
+    tabNormal.classList.remove('active');
+    installmentList.style.display = 'block';
+    normalList.style.display = 'none';
+});
 
+// ラベル色変化
+document.querySelectorAll('.row input, .row2 input').forEach(input => {
+    input.addEventListener('input', () => {
+        const colon = input.previousElementSibling;
+        const label = colon ? colon.previousElementSibling : null;
+        [label, colon].filter(Boolean).forEach(el => {
+            el.style.color = input.value.trim() ? '#df67bd' : '';
+        });
+    });
+});
 
-// フォーム送信時
+// フォーム送信
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = nameInput.value.trim();
@@ -60,215 +111,211 @@ form.addEventListener('submit', (e) => {
     }
 
     if (editingId) {
-        // 既存データを更新
         const index = expenses.findIndex(e => e.id === editingId);
         if (index !== -1) {
-            expenses[index] = { 
-                id: editingId, 
-                name, 
-                amount, 
-                firstDate, 
-                endDate };
-            }
-        editingId = null; // 編集終了
+            expenses[index] = { id: editingId, name, amount, firstDate, endDate, hiddenMonths: expenses[index].hiddenMonths || [] };
+        }
+        editingId = null;
     } else {
-        // 新規追加
-        expenses.push({ 
-            id: Date.now(),
-            name,
-            amount,
-            firstDate,
-            endDate,
-            hiddenMonths:[]
-        });
+        expenses.push({ id: Date.now(), name, amount, firstDate, endDate, hiddenMonths: [] });
     }
 
     saveData();
-    renderList();
+    renderAllLists();
 
-     // 成功メッセージ
     message.textContent = '追加したよ～';
-    message.style.color = 'rgba(255, 255, 255, 1)';
+    message.style.color = 'rgba(255,255,255,1)';
     message.classList.add('show');
+    setTimeout(() => message.classList.remove('show'), 2000);
 
-    setTimeout(() => {
-        message.classList.remove('show');
-    }, 2000);
-
-    // フォームをリセット
     form.reset();
-
-    // ラベルとコロンの色を元に戻す
-    form.querySelectorAll('.la, .co, .lala, .coco').forEach(el => {
-    el.style.color = '';
-    });
+    form.querySelectorAll('.la, .co, .lala, .coco').forEach(el => el.style.color = '');
 });
 
+// =======================================
+// 表示系
+// =======================================
 
-// データ保存
-function saveData() {
-    localStorage.setItem('expenses', JSON.stringify(expenses));
-}
+function renderExpense(expense) {
+    const day = new Date(expense.firstDate).getDate();
+    const li = document.createElement('li');
+    li.classList.add('grid');
+    li.innerHTML = `
+        <span class="top-left">${escapeHTML(expense.name)}</span>
+        <span class="bottom-left">毎月${escapeHTML(day)}日</span>
+        <span class="right">${escapeHTML(expense.amount.toLocaleString())}<small>円</small></span>
+    `;
 
-// 今月支払い対象か判定
-function isCurrentMonth(expense) {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth(); // 0-11
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.classList.add('buttons');
 
-    const first = new Date(expense.firstDate);
-    const end = expense.endDate ? new Date(expense.endDate) : null;
+    // 編集ボタン
+    const editBtn = document.createElement('button');
+    editBtn.textContent = '編集';
+    editBtn.classList.add('edit-btn');
+    editBtn.addEventListener('click', () => {
+        nameInput.value = expense.name;
+        amountInput.value = expense.amount;
+        firstDateInput.value = expense.firstDate;
+        endDateInput.value = expense.endDate || '';
+        editingId = expense.id;
+        document.getElementById("title").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    buttonsDiv.appendChild(editBtn);
 
-  // 今月の1日と月末を作る
-    const monthStart = new Date(year, month, 1);
-    const monthEnd = new Date(year, month + 1, 0);
+    // 削除ボタン
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '削除';
+    deleteBtn.classList.add('delete-btn');
+    deleteBtn.addEventListener('click', () => {
+        expense.hiddenMonths = expense.hiddenMonths || [];
+        const todayKey = `${new Date(expense.firstDate).getFullYear()}-${String(new Date(expense.firstDate).getMonth()+1).padStart(2,'0')}`;
+        if (!expense.hiddenMonths.includes(todayKey)) expense.hiddenMonths.push(todayKey);
+        saveData();
+        renderAllLists();
+        message.textContent = '削除したよ～';
+        message.classList.add('show');
+        setTimeout(() => message.classList.remove('show'), 2000);
+    });
+    buttonsDiv.appendChild(deleteBtn);
 
-  // 今月が支払い範囲内か
-    if (end) {
-        return first <= monthEnd && end >= monthStart;
-    } else {
-        // 単発支出
-        return first.getFullYear() === year && first.getMonth() === month;
+    // 分割のみ全削ボタン
+    if (expense.endDate && expense.firstDate !== expense.endDate) {
+        const deleteAllBtn = document.createElement('button');
+        deleteAllBtn.textContent = '全削';
+        deleteAllBtn.classList.add('delete-all-btn');
+        deleteAllBtn.addEventListener('click', () => {
+            expenses = expenses.filter(e => e.id !== expense.id);
+            saveData();
+            renderAllLists();
+            message.textContent = '全削したよ～';
+            message.classList.add('show');
+            setTimeout(() => message.classList.remove('show'), 2000);
+        });
+        buttonsDiv.appendChild(deleteAllBtn);
     }
+
+    li.appendChild(buttonsDiv);
+    return li;
 }
 
-// リスト表示
-function renderList() {
-    list.innerHTML = '';
 
-    const grouped = {};
+// 登録期間そのまま表示（今までのやつ）
+function formatInstallmentPeriod(expense) {
+    const start = new Date(expense.firstDate);
+    const end = new Date(expense.endDate);
+    const months = (end.getFullYear() - start.getFullYear()) * 12 +
+                    (end.getMonth() - start.getMonth()) + 1;
+    return `${start.getFullYear()}/${start.getMonth() + 1} 〜 ${end.getFullYear()}/${end.getMonth() + 1}`;
+}
 
-    expenses.forEach(expense => {
-        let end = expense.endDate ? new Date(expense.endDate) : null;
-        if (!end) end = new Date(expense.firstDate);
+// 今日基準で残り回数を計算（今月含む）
+function formatRemainingInstallment(expense) {
+    const start = new Date(expense.firstDate);
+    const end = new Date(expense.endDate);
 
-        let current = new Date(new Date(expense.firstDate).getFullYear(), new Date(expense.firstDate).getMonth(), 1);
-        while (current <= end) {
-            const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
-            if (!grouped[key]) grouped[key] = [];
-            if (!expense.hiddenMonths) expense.hiddenMonths = [];
-            if(!expense.hiddenMonths.includes(key)) {
-                grouped[key].push(expense);
-            }
-            current.setMonth(current.getMonth() + 1);
-        }
+    // 今日の年月だけ取り出して 1 日にする
+    const today = new Date();
+    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // まだ始まっていない場合は start を thisMonth に置き換え
+    const firstMonth = thisMonth > start ? thisMonth : start;
+
+    // 月単位で残り回数を計算
+    let remainingCount = (end.getFullYear() - firstMonth.getFullYear()) * 12 +
+                            (end.getMonth() - firstMonth.getMonth()) + 1;
+
+    return Math.max(remainingCount, 0); // 0 未満は 0 に
+}
+
+
+// renderList の該当部分
+function renderList(targetEl, mode = 'normal', view = 'list') {
+    targetEl.innerHTML = '';
+
+    const filtered = expenses.filter(exp => {
+        if (mode === 'normal') return true;  // すべて表示
+        if (mode === 'installment') return isInstallment(exp); // 分割だけ
+        return true;
     });
 
-    Object.keys(grouped).sort().forEach(monthKey => {
-        const monthExpenses = grouped[monthKey];
-        // 空スキップ
-        if (monthExpenses.length === 0) return;
-        monthExpenses.sort((a,b) => new Date(a.firstDate).getDate() - new Date(b.firstDate).getDate());
 
-        const [year, month] = monthKey.split('-');
+    let grouped;
+    if (view === 'list') grouped = groupByMonth(filtered);
+    else if (view === 'split') grouped = groupByExpense(filtered);
+
+    Object.keys(grouped).sort().forEach(key => {
+        const items = grouped[key];
+        if (!items.length) return;
 
         const box = document.createElement('div');
         box.classList.add('box');
 
         const title = document.createElement('span');
         title.classList.add('box-title');
-        title.textContent = `${year}年${month}月`;
-        box.appendChild(title);
 
         const ul = document.createElement('ul');
         let total = 0;
 
-        monthExpenses.forEach(expense => {
-            const day = new Date(expense.firstDate).getDate();
-            const li = document.createElement('li');
-            li.classList.add('grid');
+        if (view === 'list') {
+            const [year, month] = key.split('-');
+            title.textContent = `${year}年${month}月`;
 
-            li.innerHTML = `
-                <span class="top-left">${escapeHTML(expense.name)}</span>
-                <span class="bottom-left">毎月${escapeHTML(day)}日</span>
-                <span class="right">${escapeHTML(expense.amount.toLocaleString())}<small>円</small></span>
-            `;
-
-            // ボタン用のdiv
-            const buttonsDiv = document.createElement('div');
-            buttonsDiv.classList.add('buttons');
-
-            // 編集ボタン
-            const editBtn = document.createElement('button');
-            editBtn.textContent = '編集';
-            editBtn.classList.add('edit-btn');
-            editBtn.addEventListener('click', () => {
-                nameInput.value = expense.name;
-                amountInput.value = expense.amount;
-                firstDateInput.value = expense.firstDate;
-                endDateInput.value = expense.endDate || '';
-                editingId = expense.id;
+            items.forEach(exp => {
+                const li = renderExpense(exp);
+                ul.appendChild(li);
+                total += exp.amount;
             });
-            buttonsDiv.appendChild(editBtn);
+        } else if (view === 'split') {
+            const expense = items[0];
 
-            // 削除ボタン
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = '削除';
-            deleteBtn.classList.add('delete-btn');
-            deleteBtn.addEventListener('click', () => {
+            const remaining = formatRemainingInstallment(expense);
+            total = expense.amount * remaining;
 
-            // 編集中のデータを削除した場合は編集状態を解除
-            if (editingId === expense.id) {
-                nameInput.value = '';
-                amountInput.value = '';
-                firstDateInput.value = '';
-                endDateInput.value = '';
-                editingId = null;
-            }
-
-            if (!expense.hiddenMonths) expense.hiddenMonths = [];
-            if (!expense.hiddenMonths.includes(monthKey)) expense.hiddenMonths.push(monthKey); 
-                saveData();
-                message.textContent = '削除したよ～';
-                message.style.color = 'rgba(255,255,255,1)';
-                message.classList.add('show');
-                setTimeout(() => { message.classList.remove('show'); }, 2000);
-                renderList();
-            
-            });
-            buttonsDiv.appendChild(deleteBtn);
-
-            // 分割の場合だけ全削ボタン追加
-            if (expense.endDate && expense.firstDate !== expense.endDate) {
-                const deleteAllBtn = document.createElement('button');
-                deleteAllBtn.textContent = '全削';
-                deleteAllBtn.classList.add('delete-all-btn');
-                deleteAllBtn.addEventListener('click', () => {
-                expenses = expenses.filter(e => e.id !== expense.id);
-                saveData();
-
-                // 編集中のデータを削除した場合は編集状態を解除
-                if (editingId === expense.id) {
-                    nameInput.value = '';
-                    amountInput.value = '';
-                    firstDateInput.value = '';
-                    endDateInput.value = '';
-                    editingId = null;
-                }
-
-                    message.textContent = '全削したよ～';
-                    message.style.color = 'rgba(255,255,255,1)';
-                    message.classList.add('show');
-                    setTimeout(() => { message.classList.remove('show'); }, 2000);
-                    renderList();
-                });
-
-                buttonsDiv.appendChild(deleteAllBtn);
-            }
-
-            li.appendChild(buttonsDiv);
+            // li は 1 つだけ表示
+            const li = renderExpense(expense);
             ul.appendChild(li);
 
-            total += expense.amount;
-        });
+            // タイトルに名前＋金額＋残り回数＋期間表示
+            title.innerHTML = `<div class="split-title">
+                <div class="name">${escapeHTML(expense.name)}（${expense.amount.toLocaleString()}円）　</div>
+                <div class="period">残り${remaining}回（${formatInstallmentPeriod(expense)}）</div>
+            </div>`;
+        }
 
-        box.appendChild(ul);
+        box.appendChild(title);
+        const details = document.createElement('div');
+        details.classList.add('details');
+        details.appendChild(ul);
+        box.appendChild(details);
 
         const totalDiv = document.createElement('div');
         totalDiv.className = 'total';
         totalDiv.innerHTML = `<span class="label1">合計 ：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>`;
         box.appendChild(totalDiv);
 
-        list.appendChild(box);
+        title.addEventListener('click', () => {
+            if (box.classList.contains('open')) {
+                details.style.maxHeight = null;
+                box.classList.remove('open');
+            } else {
+                details.style.maxHeight = details.scrollHeight + 'px';
+                box.classList.add('open');
+            }
+        });
+
+        targetEl.appendChild(box);
     });
 }
+
+
+// 全リスト再描画
+function renderAllLists() {
+    renderList(normalList, 'normal', 'list');
+    renderList(installmentList, 'installment', 'split');
+}
+
+// =======================================
+// 初期描画
+// =======================================
+renderAllLists();
