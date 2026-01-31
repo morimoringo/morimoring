@@ -1,16 +1,4 @@
 @font-face {
-    font-family: 'なつめ';
-    src: url('natumemozi-o.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-}
-@font-face {
-    font-family: 'あんず等';
-    src: url('APJapanesefontT.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-}
-@font-face {
     font-family: 'あんず';
     src: url('AP.ttf') format('truetype');
     font-weight: normal;
@@ -123,24 +111,69 @@ input{
 #sub{
     color: #df67bd;
     background-color: rgb(13, 11, 35);
-    border-top: 2px #514e67 solid;
-    border-left: 2px #514e67 solid;
-    border-right: 2px #201f31 solid;
-    border-bottom: 2px #201f31 solid;
-    padding: 0.2rem 0.4rem;
-    width: 3.3rem;
-    height: 1.7rem;
-    font-size: 0.9rem;
+    border: 2px solid transparent;
+    border-top: #514e67 solid;
+    border-left: #514e67 solid;
+    border-right: #201f31 solid;
+    border-bottom: #201f31 solid;
+    padding: 0.4rem 0.4rem;
+    width: 3.5rem;
+    height: 2rem;
+    font-size: 1rem;
 }
 
 
-#expense-list{
+
+#tab-container {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top:3rem;
+}
+#tab-container:after {
+    content: '';
+    width: 100%;
+    height: 2.5px;
+    background: #8653cd;
+    display: block;
+    order: -1;
+}
+.tab-label {
+    color: White;
+    background: rgb(18, 15, 43);
+    font-weight: bold;
+    white-space: nowrap;
+    text-align: center;
+    padding: 8px .5em;
+    order: -1;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+    flex: 1;
+}
+.tab-label:not(:last-of-type) {
+    margin-right: 5px;
+}
+
+/* アクティブなタブ */
+.tab-switch:checked+.tab-label {
+    background: #8653cd;
+}
+
+/* ラジオボタン非表示 */
+.tab-switch {
+    display: none;
+}
+
+
+
+.expense-list{
     padding: 0;
     margin-top: 0;
 }
 .box {
     position: relative;
-    margin: 4em 0;
+    margin: 3em 0 1.5em 0;
     padding: 0.5em;
     border: solid 1px #66a7d2;
     border-radius: 8px;
@@ -158,7 +191,31 @@ input{
     font-size: 1.6rem;
     background: rgb(3, 2, 22);
     color: #95ccff;
+    cursor: pointer;
 }
+
+.split-title{
+    display: flex;
+    align-items: baseline;
+    color: #df81c4;
+}
+
+.split-title .period {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
+
+.details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+.box.open .details {
+    max-height: 1000px;
+}
+
+
 .box ul,li {
     list-style-type: none;
     margin: 0; 
@@ -245,6 +302,11 @@ small{
     text-align: end;
     font-size: 2rem;
 }
+/* box が閉じているとき（＝open クラスがついてない時）は線を消す */
+.box:not(.open) .total {
+    border-top: none;
+}
+
 .total{
     align-items: center;
 }
@@ -255,4 +317,9 @@ small{
 }
 .box .total .label2 {
     font-size: 1.2rem;
+}
+
+
+.hidden {
+    display: none;
 }
