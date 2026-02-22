@@ -1,34 +1,39 @@
 @font-face {
-    font-family: 'あんず';
-    src: url('AP.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
+  font-family: "あんず";
+  src: url("AP.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
 }
-body,span,input,button{
-    font-family: 'あんず', sans-serif;
-    letter-spacing: -0.08em;
+body,
+span,
+input,
+button {
+  font-family: "あんず", sans-serif;
+  letter-spacing: -0.08em;
 }
-input[type="text"],.top-left,.bottom-left{
-    letter-spacing: 0em ;
-}
-
-body{
-    color: #df67bd;
-    /*color: #66a7d2;*/
-    /*color: #8653cd;*/
-    background-color: rgb(3, 2, 22);
-
-    padding: 1.2rem;
-    border:2px solid #8653cd;
-    box-sizing:border-box;
-    border-radius: 5px;
-    margin: 0.8rem;
+input[type="text"],
+.top-left,
+.bottom-left {
+  letter-spacing: 0em;
 }
 
-#title{
-    font-size: 2rem;
-    margin-bottom:1.4rem;
-    display: inline-block;
+body {
+  color: #df67bd;
+  /*color: #66a7d2;*/
+  /*color: #8653cd;*/
+  background-color: rgb(3, 2, 22);
+
+  padding: 1.2rem;
+  border: 2px solid #8653cd;
+  box-sizing: border-box;
+  border-radius: 5px;
+  margin: 0.8rem;
+}
+
+#title {
+  font-size: 2rem;
+  margin-bottom: 1.4rem;
+  display: inline-block;
 }
 
 .message {
@@ -46,188 +51,195 @@ body{
   z-index: 1000;
 }
 .message.show {
-    top: 2.2rem;
-    opacity: 1;
+  top: 2.2rem;
+  opacity: 1;
 }
 
-span{
-    color: #66a7d2;
-    font-size: 1.3rem;
+span {
+  color: #66a7d2;
+  font-size: 1.3rem;
 }
-input{
-    color: #FFF !important;
-    background-color: rgb(18, 15, 43);
-    border: 0;
-    border-right: 1.5px #514e67 solid;
-    border-bottom: 1.5px #514e67 solid;
-    margin-left: 0.3rem;
-    border-radius: 4px;
-    height: 1rem;
-    font-size: 1.2rem;
+input {
+  color: #fff !important;
+  background-color: rgb(18, 15, 43);
+  border: 0;
+  margin-left: 0.3rem;
+  border-radius: 4px;
+  height: 1rem;
+  font-size: 1.2rem;
 }
-
-.row{
-    display: grid;
-    align-items: center;
-    grid-template-columns: 5.6rem 0.9rem 0.8fr; /* 左側広め・右側狭め */
-    grid-template-rows: 1fr 1fr;
-    row-gap: 0.7rem;
-    margin-bottom: 0.7rem;
-}
-.row2{
-    display: grid;
-    align-items: center;
-    grid-template-columns: 9rem 0.7rem 7.5rem; /* 左側広め・右側狭め */
-    grid-template-rows: 1fr 1fr;
-    row-gap: 0.7rem;
-    margin-bottom: 0.5rem;
-}
-.la{
-    grid-column: 1;
-    grid-row: 1;
-}
-.co{
-    grid-column: 2;
-    grid-row: 1;
-}
-#name,#first-date{
-    grid-column: 3;
-    grid-row: 1;
-}
-.lala{
-    grid-column: 1;
-    grid-row: 2;
-}
-.coco{
-    grid-column: 2;
-    grid-row: 2;
-}
-#amount,#end-date{
-    grid-column: 3;
-    grid-row: 2;
+input,
+button {
+  border: none;
 }
 
-
-#sub{
-    color: #df67bd;
-    background-color: rgb(13, 11, 35);
-    border: 2px solid transparent;
-    border-top: #514e67 solid;
-    border-left: #514e67 solid;
-    border-right: #201f31 solid;
-    border-bottom: #201f31 solid;
-    padding: 0.4rem 0.4rem;
-    width: 3.5rem;
-    height: 2rem;
-    font-size: 1rem;
+.row {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 5.6rem 0.9rem 0.8fr; /* 左側広め・右側狭め */
+  grid-template-rows: 1fr 1fr;
+  row-gap: 0.7rem;
+  margin-bottom: 0.7rem;
+}
+.row2 {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 9rem 0.7rem 7.5rem; /* 左側広め・右側狭め */
+  grid-template-rows: 1fr 1fr;
+  row-gap: 0.7rem;
+  margin-bottom: 0.5rem;
+}
+.la {
+  grid-column: 1;
+  grid-row: 1;
+}
+.co {
+  grid-column: 2;
+  grid-row: 1;
+}
+#name,
+#first-date {
+  grid-column: 3;
+  grid-row: 1;
+}
+.lala {
+  grid-column: 1;
+  grid-row: 2;
+}
+.coco {
+  grid-column: 2;
+  grid-row: 2;
+}
+#amount,
+#end-date {
+  grid-column: 3;
+  grid-row: 2;
 }
 
+#sub {
+  color: #df67bd;
+  background-color: #1c1d1f;
+  border-radius: 6px;
+  padding: 0.4rem 0.4rem;
+  width: 3.5rem;
+  height: 2rem;
+  font-size: 1rem;
+}
 
+#mode {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mode-btn {
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 1rem;
+  background-color: #1c1d1f;
+}
+/* 通常モード */
+.mode-btn.normal {
+  color: #74abe0;
+}
+/* 固定モード */
+.mode-btn.recurring {
+  color: #8653cd;
+}
 
 #tab-container {
-    display: flex;
-    flex-wrap: wrap;
-    margin-top:3rem;
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 3rem;
 }
 #tab-container:after {
-    content: '';
-    width: 100%;
-    height: 2.5px;
-    background: #8653cd;
-    display: block;
-    order: -1;
+  content: "";
+  width: 100%;
+  height: 2.5px;
+  background: #8653cd;
+  display: block;
+  order: -1;
 }
 .tab-label {
-    color: White;
-    background: rgb(18, 15, 43);
-    font-weight: bold;
-    white-space: nowrap;
-    text-align: center;
-    padding: 8px .5em;
-    order: -1;
-    position: relative;
-    z-index: 1;
-    cursor: pointer;
-    border-radius: 5px 5px 0 0;
-    flex: 1;
+  color: White;
+  background: rgb(18, 15, 43);
+  font-weight: bold;
+  white-space: nowrap;
+  text-align: center;
+  padding: 8px 0.5em;
+  order: -1;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  border-radius: 5px 5px 0 0;
+  flex: 1;
 }
 .tab-label:not(:last-of-type) {
-    margin-right: 5px;
+  margin-right: 5px;
 }
 
 /* アクティブなタブ */
-.tab-switch:checked+.tab-label {
-    background: #8653cd;
+.tab-switch:checked + .tab-label {
+  background: #8653cd;
 }
 
 /* ラジオボタン非表示 */
 .tab-switch {
-    display: none;
+  display: none;
 }
 
-
-
-.expense-list{
-    padding: 0;
-    margin-top: 0;
+.expense-list {
+  padding: 0;
+  margin-top: 0;
 }
 .box {
-    position: relative;
-    margin: 3em 0 1.5em 0;
-    padding: 0.5em;
-    border: solid 1px #66a7d2;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+  position: relative;
+  margin: 3em 0 1.5em 0;
+  padding: 0.5em;
+  border: solid 1.2px #66a7d2;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 .box-title {
-    position: absolute;
-    display: inline-block;
-    top: -13px;
-    left: 10px;
-    padding: 0 9px;
-    line-height: 1;
-    font-size: 1.6rem;
-    background: rgb(3, 2, 22);
-    color: #95ccff;
-    cursor: pointer;
+  position: absolute;
+  display: inline-block;
+  top: -13px;
+  left: 10px;
+  padding: 0 9px;
+  line-height: 1;
+  font-size: 1.6rem;
+  background: rgb(3, 2, 22);
+  color: #95ccff;
+  cursor: pointer;
 }
-
-.split-title{
-    display: flex;
-    align-items: baseline;
-    color: #df81c4;
-}
-
-.split-title .period {
-    font-size: 0.85em;
-    opacity: 0.8;
-}
-
 
 .details {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
 }
 .box.open .details {
-    max-height: 1000px;
+  max-height: 1000px;
 }
 
-
-.box ul,li {
-    list-style-type: none;
-    margin: 0; 
-    padding: 0;
-    border-bottom: 1px solid #8653cd20;
+.box ul,
+li {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid #8653cd20;
 }
-.box ul,li:last-child {
+.box ul,
+li:last-child {
   border-bottom: none;
 }
 .box li {
-    padding-top: 0.7rem;
-    padding-bottom: 1rem;
+  padding-top: 0.7rem;
+  padding-bottom: 1rem;
 }
 
 .grid {
@@ -243,7 +255,7 @@ input{
 .top-left {
   grid-column: 1;
   grid-row: 1;
-    color: #cb5aab;
+  color: #cb5aab;
   font-size: 1.5rem;
 }
 
@@ -262,13 +274,12 @@ input{
   grid-row: 1 / span 2; /* 上下にまたがる */
   text-align: right;
   font-size: 1.8rem;
-  color:#df67bd;
+  color: #df67bd;
 }
 
-small{
-    font-size: 0.8rem;
+small {
+  font-size: 0.8rem;
 }
-
 
 /* 編集・削除ボタン */
 .buttons {
@@ -281,45 +292,83 @@ small{
 }
 .edit-btn,
 .delete-btn,
-.delete-all-btn{
-    color: #95ccffe1;
-    background-color: rgb(13, 11, 35);
-    border-top: 2px #514e67 solid;
-    border-left: 2px #514e67 solid;
-    border-right: 2px #201f31 solid;
-    border-bottom: 2px #201f31 solid;
-    padding: 0.2rem 0.4rem;
-    white-space: nowrap;
-    width: 2.7rem;
-    height: 1.6rem;
-    font-size: 0.9rem;
-    text-align: center;
+.delete-all-btn,
+.adjust-btn {
+  color: #5ea2d0;
+  background-color: #1c1d1f;
+  padding: 0.2rem 0.4rem;
+  white-space: nowrap;
+  width: 2.8rem;
+  height: 1.6rem;
+  font-size: 0.9rem;
+  text-align: center;
+  border-radius: 6px;
+}
+.adjust-btn {
+  width: 4.5rem;
+}
+.delete-btn,
+.delete-all-btn {
+  color: #8653cd;
 }
 
-.box .total{
-    border-top: 1px dashed #8653cde0; 
-    padding: 0.7rem 0.3rem 0.2rem;
-    text-align: end;
-    font-size: 2rem;
+.box .total {
+  border-top: 1px dashed #8653cd;
+  padding: 0.7rem 0.3rem 0.2rem;
+  text-align: end;
+  font-size: 2rem;
 }
 /* box が閉じているとき（＝open クラスがついてない時）は線を消す */
 .box:not(.open) .total {
-    border-top: none;
+  border-top: none;
 }
 
-.total{
-    align-items: center;
+/*月別合計*/
+.total {
+  align-items: center;
 }
 .box .total .label1 {
-    opacity: 0.9;
-    font-size: 1.3rem;
-    margin-right: 0.5rem;
+  opacity: 0.9;
+  font-size: 1.3rem;
+  margin-right: 0.5rem;
 }
 .box .total .label2 {
-    font-size: 1.2rem;
+  font-size: 1.2rem;
 }
 
+/*分割*/
+.split-title {
+  display: flex;
+  align-items: baseline;
+  color: #95ccff;
+}
+.label3 {
+  opacity: 1;
+  font-size: 1.2rem;
+  color: #95ccff;
+}
+/*分別合計*/
+.split-period {
+  font-size: 1.6rem;
+  opacity: 1;
+  align-items: center;
+  text-align: end;
+  color: #df67bd;
+}
 
-.hidden {
-    display: none;
+/* 空のときのメッセージ */
+.empty-message {
+  text-align: center;
+  padding: 2rem 0 1rem;
+  opacity: 0.8;
+  font-size: 2.1rem;
+  color: #95ccff;
+}
+
+.lala.disabled,
+.coco.disabled,
+#amount.disabled,
+#end-date.disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
