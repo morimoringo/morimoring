@@ -1,54 +1,64 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=, initial-scale=1.0,maximum-scale=1">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=, initial-scale=1.0,maximum-scale=1" />
     <title>家計簿</title>
 
-    <link rel="stylesheet" href="reset.css">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="reset.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <p id="title">家計簿</p>
     <p id="message" class="message"></p>
 
     <form id="expense-form">
-        <div class="row">
-                <span class="la">項目名</span>
-                <span class="co">：</span>
-            <input type="text" id="name" maxlength="30" required>
-                <span class="lala">金額 （円） </span>
-                <span class="coco">：</span>
-            <input type="number" id="amount" required>
-        </div>
+      <div class="row">
+        <span class="la">項目名</span>
+        <span class="co">：</span>
+        <input type="text" id="name" maxlength="30" required />
+        <span class="lala">金額 （円） </span>
+        <span class="coco">：</span>
+        <input type="number" id="amount" required />
+      </div>
 
-        <div class="row2">
-                <span class="la">初回引き落とし日</span>
-                <span class="co">：</span>
-            <input type="date" id="first-date" required>
-                <span class="lala">最終引き落とし日</span>
-                <span class="coco">：</span>
-            <input type="date" id="end-date">
-        </div>
+      <div class="row2">
+        <span class="la">初回引き落とし日</span>
+        <span class="co">：</span>
+        <input type="date" id="first-date" required />
+        <span class="lala">最終引き落とし日</span>
+        <span class="coco">：</span>
+        <input type="date" id="end-date" />
+      </div>
 
-        <br>
-        <button id="sub" type="submit">追加</button>
+      <br />
+      <button id="sub" type="submit">追加</button>
     </form>
+    <div id="mode">
+      <button id="mode-toggle" class="mode-btn normal">通常モード</button>
+    </div>
 
+    <div id="tab-container">
+      <input
+        id="tab-normal"
+        type="radio"
+        name="TAB"
+        class="tab-switch active"
+        checked="checked"
+      />
+      <label class="tab-label" for="tab-normal">月別</label>
 
-<div id="tab-container">
-    <input id="tab-normal" type="radio" name="TAB" class="tab-switch active" checked="checked" />
-    <label class="tab-label" for="tab-normal">月別</label>
+      <input id="tab-installment" type="radio" name="TAB" class="tab-switch" />
+      <label class="tab-label" for="tab-installment">分割</label>
 
-    <input id="tab-installment" type="radio" name="TAB" class="tab-switch" />
-    <label class="tab-label" for="tab-installment">分割</label>
-</div>
-
+      <input id="tab-recurring" type="radio" name="TAB" class="tab-switch" />
+      <label class="tab-label" for="tab-recurring">毎月</label>
+    </div>
 
     <ul class="expense-list" id="normal"></ul>
     <ul class="expense-list hidden" id="installment"></ul>
-
+    <ul class="expense-list hidden" id="recurring"></ul>
 
     <script src="main.js"></script>
-</body>
+  </body>
 </html>
