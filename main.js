@@ -28,43 +28,44 @@ function saveData() {
 }
 
 function isInstallment(expense) {
-  return expense.endDate && expense.firstDate !== expense.endDate;
+  return expense.type === "installment";
+}
+
+function createInstallments(baseData, totalMonths) {
+  const parentId = crypto.randomUUID();
+  const results = [];
+
+  const start = new Date(baseData.firstDate);
+
+  for (let i = 0; i < totalMonths; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+
+    results.push({
+      ...baseData,
+      id: crypto.randomUUID(),
+      parentId,
+      type: "installment",
+      installmentIndex: i + 1,
+      installmentTotal: totalMonths,
+      firstDate: d.toISOString().slice(0, 10),
+    });
+  }
+
+  return results;
 }
 
 function groupByMonth(expenses) {
   const grouped = {};
 
-  const today = new Date();
-  const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
   expenses.forEach((exp) => {
-    const end = exp.endDate ? new Date(exp.endDate) : new Date(exp.firstDate);
+    const d = new Date(exp.firstDate);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      "0",
+    )}`;
 
-    let current = new Date(
-      new Date(exp.firstDate).getFullYear(),
-      new Date(exp.firstDate).getMonth(),
-      1,
-    );
-
-    while (current <= end) {
-      // 🔹 過去月はスキップ
-      if (current < thisMonth) {
-        current.setMonth(current.getMonth() + 1);
-        continue;
-      }
-
-      const key = `${current.getFullYear()}-${String(
-        current.getMonth() + 1,
-      ).padStart(2, "0")}`;
-
-      if (!grouped[key]) grouped[key] = [];
-
-      if (!exp.hiddenMonths?.includes(key)) {
-        grouped[key].push(exp);
-      }
-
-      current.setMonth(current.getMonth() + 1);
-    }
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(exp);
   });
 
   return grouped;
@@ -73,7 +74,7 @@ function groupByMonth(expenses) {
 function groupByExpense(expenses) {
   const grouped = {};
   expenses.forEach((exp) => {
-    const key = exp.id;
+    const key = exp.parentId || exp.id;
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(exp);
   });
@@ -280,27 +281,61 @@ form.addEventListener("submit", (e) => {
     });
   } else {
     if (editingId) {
-      const index = expenses.findIndex((e) => e.id === editingId);
-      if (index !== -1) {
-        expenses[index] = {
-          id: editingId,
+      // 🔵 編集は「親単位」で処理
+      const target = expenses.find((e) => e.id === editingId);
+      if (!target) return;
+
+      if (target.parentId) {
+        // 分割の編集 → 同じ親IDを全部更新
+        expenses = expenses.map((e) => {
+          if (e.parentId === target.parentId) {
+            return {
+              ...e,
+              name,
+              amount,
+            };
+          }
+          return e;
+        });
+      } else {
+        // 通常データ編集
+        const index = expenses.findIndex((e) => e.id === editingId);
+        if (index !== -1) {
+          expenses[index] = {
+            ...expenses[index],
+            name,
+            amount,
+            firstDate,
+          };
+        }
+      }
+
+      editingId = null;
+    } else {
+      if (endDate) {
+        const start = new Date(firstDate);
+        const end = new Date(endDate);
+
+        const totalMonths =
+          (end.getFullYear() - start.getFullYear()) * 12 +
+          (end.getMonth() - start.getMonth()) +
+          1;
+
+        const items = createInstallments(
+          { name, amount, firstDate },
+          totalMonths,
+        );
+
+        expenses.push(...items);
+      } else {
+        expenses.push({
+          id: crypto.randomUUID(),
           name,
           amount,
           firstDate,
-          endDate,
-          hiddenMonths: expenses[index].hiddenMonths || [],
-        };
+          type: "normal",
+        });
       }
-      editingId = null;
-    } else {
-      expenses.push({
-        id: Date.now(),
-        name,
-        amount,
-        firstDate,
-        endDate,
-        hiddenMonths: [],
-      });
     }
   }
 
@@ -318,7 +353,7 @@ form.addEventListener("submit", (e) => {
 // 表示系
 // =======================================
 function renderExpense(expense, monthKey = null, view = "list") {
-  // safety: expense が undefined の場合は空の要素を返してクラッシュを防ぐ
+  console.log("view:", view, "isInstallment:", isInstallment(expense));
   if (!expense) {
     const li = document.createElement("li");
     li.classList.add("grid");
@@ -379,7 +414,7 @@ function renderExpense(expense, monthKey = null, view = "list") {
     nameInput.value = expense.name;
     amountInput.value = expense.amount || "";
     firstDateInput.value = expense.firstDate;
-    endDateInput.value = expense.endDate || "";
+    endDateInput.value = "";
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
@@ -452,42 +487,31 @@ function renderExpense(expense, monthKey = null, view = "list") {
   }
 
   // =========================
-  // 削除（分岐あり）
+  // 削除ボタン
   // =========================
-  const deleteBtn = document.createElement("button");
-  deleteBtn.textContent = "削除";
-  deleteBtn.classList.add("delete-btn");
+  if (
+    (view === "list" && !expense.isRecurring) ||
+    (view === "recurring" && expense.isRecurring)
+  ) {
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "削除";
+    deleteBtn.classList.add("delete-btn");
 
-  deleteBtn.addEventListener("click", () => {
-    // recurring判定
-    const isRecurring =
-      expense.isRecurring || recurringExpenses.some((r) => r.id === expense.id);
-
-    if (isRecurring) {
-      recurringExpenses = recurringExpenses.filter((r) => r.id !== expense.id);
-      message.textContent = "削除したよ～";
-    }
-    // 月別表示で分割データなら「その月だけ削除」
-    else if (view === "list" && monthKey && isInstallment(expense)) {
-      expense.hiddenMonths = expense.hiddenMonths || [];
-      if (!expense.hiddenMonths.includes(monthKey)) {
-        expense.hiddenMonths.push(monthKey);
+    deleteBtn.addEventListener("click", () => {
+      if (expense.isRecurring) {
+        recurringExpenses = recurringExpenses.filter(
+          (r) => r.id !== expense.id,
+        );
+      } else {
+        expenses = expenses.filter((e) => e.id !== expense.id);
       }
-      message.textContent = "今月分だけ削除したよ";
-    }
-    // それ以外は完全削除
-    else {
-      expenses = expenses.filter((e) => e.id !== expense.id);
-      message.textContent = "削除したよ～";
-    }
 
-    saveData();
-    renderAllLists();
-    message.classList.add("show");
-    setTimeout(() => message.classList.remove("show"), 2000);
-  });
+      saveData();
+      renderAllLists();
+    });
 
-  buttonsDiv.appendChild(deleteBtn);
+    buttonsDiv.appendChild(deleteBtn);
+  }
 
   // =========================
   // 全削（分割のみ）
@@ -498,11 +522,9 @@ function renderExpense(expense, monthKey = null, view = "list") {
     deleteAllBtn.classList.add("delete-all-btn");
 
     deleteAllBtn.addEventListener("click", () => {
-      expenses = expenses.filter((e) => e.id !== expense.id);
-
+      expenses = expenses.filter((e) => e.parentId !== expense.parentId);
       saveData();
       renderAllLists();
-
       message.textContent = "全月分削除したよ";
       message.classList.add("show");
       setTimeout(() => message.classList.remove("show"), 2000);
@@ -515,57 +537,17 @@ function renderExpense(expense, monthKey = null, view = "list") {
   return li;
 }
 
-// 登録期間そのまま表示（今までのやつ）
-function formatInstallmentPeriod(expense) {
-  const start = new Date(expense.firstDate);
-  const end = new Date(expense.endDate);
-  const months =
-    (end.getFullYear() - start.getFullYear()) * 12 +
-    (end.getMonth() - start.getMonth()) +
-    1;
-  return `${start.getFullYear()}/${start.getMonth() + 1}〜${end.getFullYear()}/${end.getMonth() + 1}`;
-}
-
-// 今日基準で残り回数を計算（今月含む）
 function formatRemainingInstallment(expense) {
-  const start = new Date(expense.firstDate);
-  const end = new Date(expense.endDate);
+  if (!expense.parentId) return 0;
 
-  const today = new Date();
-  const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-  // 残り計算の開始月
-  const firstMonth = thisMonth > start ? thisMonth : start;
-
-  let totalMonths =
-    (end.getFullYear() - firstMonth.getFullYear()) * 12 +
-    (end.getMonth() - firstMonth.getMonth()) +
-    1;
-
-  if (totalMonths <= 0) return 0;
-
-  // hiddenMonths を除外
-  const hidden = expense.hiddenMonths || [];
-
-  let hiddenCount = 0;
-
-  hidden.forEach((key) => {
-    const [year, month] = key.split("-").map(Number);
-    const hiddenDate = new Date(year, month - 1, 1);
-
-    if (hiddenDate >= firstMonth && hiddenDate <= end) {
-      hiddenCount++;
-    }
-  });
-
-  return Math.max(totalMonths - hiddenCount, 0);
+  return expenses.filter((e) => e.parentId === expense.parentId).length;
 }
 
 // renderList の該当部分
-function renderList(targetEl, mode = "normal", view = "list") {
+function renderList(targetEl, mode = "normal", view = "list", data = expenses) {
   targetEl.innerHTML = "";
 
-  const filtered = expenses.filter((exp) => {
+  const filtered = data.filter((exp) => {
     if (mode === "normal") return true; // すべて表示
     if (mode === "installment") return isInstallment(exp); // 分割だけ
     return true;
@@ -598,7 +580,6 @@ function renderList(targetEl, mode = "normal", view = "list") {
     });
   }
 
-  // 追加: 他のデータが2ヶ月以下でも、毎月モードで登録がある場合のみ
   // 今月以降を最低3ヵ月分表示する（当月・翌月・翌々月）
   if (recurringExpenses.length > 0) {
     const today = new Date();
@@ -638,37 +619,6 @@ function renderList(targetEl, mode = "normal", view = "list") {
           ul.appendChild(li);
           total += exp.amount || 0;
         });
-
-        // renderList 内の recurring 展開部分
-        recurringExpenses.forEach((rec) => {
-          const startMonth = rec.firstDate.slice(0, 7); // YYYY-MM
-          if (key >= startMonth) {
-            // 既存 expenses に同じ id のものがあればそれを使う
-            const linkedExpense = expenses.find((e) => e.id === rec.id);
-
-            const li = renderExpense(
-              linkedExpense || {
-                ...rec,
-                amount: rec.amount,
-                isRecurring: true,
-              },
-              key,
-              "list",
-            );
-            ul.appendChild(li);
-
-            // 月別調整を考慮した金額を合計に加算
-            if (linkedExpense) {
-              total += linkedExpense.amount;
-            } else {
-              const adjustedAmount =
-                rec.monthlyAdjustments && rec.monthlyAdjustments[key]
-                  ? rec.monthlyAdjustments[key]
-                  : rec.amount;
-              total += adjustedAmount;
-            }
-          }
-        });
       } else if (view === "split") {
         const expense = items[0];
         if (!expense) return; // items が空の場合はスキップ
@@ -677,13 +627,8 @@ function renderList(targetEl, mode = "normal", view = "list") {
         const li = renderExpense(expense, null, "split");
         ul.appendChild(li);
 
-        // タイトル：名前＋月額
-        title.innerHTML = `<div class="split-title">
-                <div class="name">
-                    ${expense.amount.toLocaleString()}円
-                    <span class="label3">（${formatInstallmentPeriod(expense)}）</span>
-                </div>
-            </div>`;
+        // 分割ビューではタイトルを表示しない（非表示）
+        title.style.display = "none";
       }
 
       box.appendChild(title);
@@ -691,6 +636,12 @@ function renderList(targetEl, mode = "normal", view = "list") {
       details.classList.add("details");
       details.appendChild(ul);
       box.appendChild(details);
+
+      // 分割ビューでは折り畳み不可にする（常に展開）
+      if (view === "split") {
+        details.style.maxHeight = "1000px";
+        box.classList.add("open");
+      }
 
       const totalDiv = document.createElement("div");
       totalDiv.className = "total";
@@ -710,15 +661,18 @@ function renderList(targetEl, mode = "normal", view = "list") {
 
       box.appendChild(totalDiv);
 
-      title.addEventListener("click", () => {
-        if (box.classList.contains("open")) {
-          details.style.maxHeight = null;
-          box.classList.remove("open");
-        } else {
-          details.style.maxHeight = details.scrollHeight + "px";
-          box.classList.add("open");
-        }
-      });
+      // 折り畳みは split ビューでは無効
+      if (view !== "split") {
+        title.addEventListener("click", () => {
+          if (box.classList.contains("open")) {
+            details.style.maxHeight = null;
+            box.classList.remove("open");
+          } else {
+            details.style.maxHeight = details.scrollHeight + "px";
+            box.classList.add("open");
+          }
+        });
+      }
 
       targetEl.appendChild(box);
     });
@@ -735,62 +689,18 @@ function renderList(targetEl, mode = "normal", view = "list") {
   }
 }
 
-// 毎月を最低3ヵ月分確保
-function syncRecurringMonths() {
-  if (recurringExpenses.length === 0) return;
-
-  const now = new Date();
-  const currentMonth = now.getFullYear() * 12 + now.getMonth();
-
-  recurringExpenses.forEach((rec) => {
-    const start = new Date(rec.startDate);
-    const startMonth = start.getFullYear() * 12 + start.getMonth();
-
-    if (!rec.generatedMonths) {
-      rec.generatedMonths = [];
-    }
-
-    // 現在月との差
-    const diff = currentMonth - startMonth;
-    if (diff < 0) return;
-
-    // 既存の他データの最大月数
-    const otherMonths = expenses.length;
-    const targetLength = Math.max(3, otherMonths);
-
-    while (rec.generatedMonths.length < targetLength) {
-      const nextMonth = startMonth + rec.generatedMonths.length;
-
-      if (nextMonth > currentMonth) break;
-
-      const year = Math.floor(nextMonth / 12);
-      const month = nextMonth % 12;
-
-      expenses.push({
-        ...rec,
-        year,
-        month,
-        amount: 0,
-        isAuto: true,
-      });
-
-      rec.generatedMonths.push(nextMonth);
-    }
-  });
+// =======================================
+// 削除処理（単体安全削除）
+// =======================================
+function deleteExpense(expenses, idx) {
+  expenses.splice(idx, 1);
 }
 
 // 全リスト再描画
 function renderAllLists() {
-  // 自動生成データは保存しない
-  const displayExpenses = generateRecurringDisplayData([...expenses]);
-
-  // 残り0回の分割は自動削除
-  expenses = expenses.filter((exp) => {
-    if (!isInstallment(exp)) return true;
-    return formatRemainingInstallment(exp) > 0;
-  });
-
   saveData();
+
+  const displayExpenses = generateRecurringDisplayData([...expenses]);
 
   renderList(normalList, "normal", "list", displayExpenses);
   renderList(installmentList, "installment", "split", displayExpenses);
@@ -831,28 +741,28 @@ function renderRecurringList() {
 function generateRecurringDisplayData(baseExpenses) {
   const result = [...baseExpenses];
 
-  const now = new Date();
-  const currentMonth = now.getFullYear() * 12 + now.getMonth();
-
   recurringExpenses.forEach((rec) => {
     const start = new Date(rec.firstDate);
-    const startMonth = start.getFullYear() * 12 + start.getMonth();
 
-    const otherMonths = baseExpenses.length;
-    const targetLength = Math.max(3, otherMonths);
+    for (let i = 0; i < 3; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
 
-    for (let i = 0; i < targetLength; i++) {
-      const monthIndex = startMonth + i;
-      if (monthIndex > currentMonth) break;
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+        2,
+        "0",
+      )}`;
 
-      const year = Math.floor(monthIndex / 12);
-      const month = monthIndex % 12;
+      const monthString = `${monthKey}-01`;
+
+      // 🔹 月別調整をここで確定させる
+      const adjustedAmount = rec.monthlyAdjustments?.[monthKey] ?? rec.amount;
 
       result.push({
         ...rec,
-        year,
-        month,
-        isAuto: true,
+        isRecurring: true,
+        firstDate: monthString,
+        endDate: monthString,
+        amount: adjustedAmount,
       });
     }
   });
