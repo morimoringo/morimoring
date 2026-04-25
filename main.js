@@ -512,8 +512,9 @@ function renderExpense(expense, monthKey = null, view = "list") {
   // 削除ボタン
   // =========================
   if (
-    (view === "list" && !expense.isRecurring) ||
-    (view === "recurring" && expense.isRecurring)
+    view === "recurring" ||
+    (view === "list" && expense.isRecurring) ||
+    (view === "list" && !expense.isRecurring)
   ) {
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "削除";
@@ -521,9 +522,21 @@ function renderExpense(expense, monthKey = null, view = "list") {
 
     deleteBtn.addEventListener("click", () => {
       if (expense.isRecurring) {
-        recurringExpenses = recurringExpenses.filter(
-          (r) => r.id !== expense.id,
-        );
+        if (view === "recurring") {
+          // 完全削除
+          recurringExpenses = recurringExpenses.filter(
+            (r) => r.id !== expense.id,
+          );
+        } else {
+          // 今月だけ削除
+          const rec = recurringExpenses.find((r) => r.id === expense.id);
+          if (rec && monthKey) {
+            if (!rec.hiddenMonths) rec.hiddenMonths = [];
+            if (!rec.hiddenMonths.includes(monthKey)) {
+              rec.hiddenMonths.push(monthKey);
+            }
+          }
+        }
       } else {
         expenses = expenses.filter((e) => e.id !== expense.id);
       }
@@ -803,6 +816,8 @@ function generateDisplayData(baseExpenses) {
       const dd = String(rec.day).padStart(2, "0");
 
       const monthKey = `${yyyy}-${mm}`;
+
+      if (rec.hiddenMonths?.includes(monthKey)) continue;
 
       const adjustedAmount = rec.monthlyAdjustments?.[monthKey] ?? rec.amount;
 
