@@ -21,6 +21,7 @@ let editingId = null;
 let editingRecurringId = null;
 let adjustingMonthKey = null;
 let openedMonthKeys = new Set();
+let bankMode = "main";
 
 function saveData() {
   localStorage.setItem("expenses", JSON.stringify(expenses));
@@ -83,6 +84,15 @@ function groupByExpense(expenses) {
     grouped[key].push(exp);
   });
   return grouped;
+}
+
+function applyBankMode() {
+  const isSub = bankMode === "sub";
+
+  bankToggle.textContent = isSub ? "Olive" : "Olive";
+
+  bankToggle.classList.toggle("main", !isSub);
+  bankToggle.classList.toggle("sub", isSub);
 }
 
 // =======================================
@@ -203,6 +213,14 @@ toggleBtn.addEventListener("click", () => {
   applyFormMode();
 });
 
+const bankToggle = document.getElementById("bank-toggle");
+
+bankToggle.addEventListener("click", () => {
+  bankMode = bankMode === "main" ? "sub" : "main";
+
+  applyBankMode();
+});
+
 // フォーム送信
 form.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -264,6 +282,7 @@ form.addEventListener("submit", (e) => {
       recurringExpenses[recIndex].amount = amount;
       recurringExpenses[recIndex].firstDate = firstDate;
       recurringExpenses[recIndex].day = new Date(firstDate).getDate();
+      recurringExpenses[recIndex].bankType = bankMode;
     }
     editingRecurringId = null;
 
@@ -275,17 +294,26 @@ form.addEventListener("submit", (e) => {
     // 通常処理
     // =========================
   } else if (isRecurring) {
-    recurringExpenses.push({
+    /*recurringExpenses.push({
       id: Date.now(),
       name,
       amount,
       day: new Date(firstDate).getDate(), // 引き落とし日だけ使う設計なら
       firstDate,
       hiddenMonths: [],
+    });*/
+    recurringExpenses.push({
+      id: Date.now(),
+      name,
+      amount,
+      day: new Date(firstDate).getDate(),
+      firstDate,
+      hiddenMonths: [],
+      bankType: bankMode,
     });
   } else {
     if (editingId) {
-      // 🔵 編集は「親単位」で処理
+      // 編集は「親単位」で処理
       const target = expenses.find((e) => e.id === editingId);
       if (!target) return;
 
@@ -302,8 +330,17 @@ form.addEventListener("submit", (e) => {
         expenses = expenses.filter((e) => e.parentId !== target.parentId);
 
         // 新しい分割生成
-        const items = createInstallments(
+        /*const items = createInstallments(
           { name, amount, firstDate },
+          totalMonths,
+        );*/
+        const items = createInstallments(
+          {
+            name,
+            amount,
+            firstDate,
+            bankType: bankMode,
+          },
           totalMonths,
         );
 
@@ -332,19 +369,36 @@ form.addEventListener("submit", (e) => {
           (end.getMonth() - start.getMonth()) +
           1;
 
-        const items = createInstallments(
+        /*const items = createInstallments(
           { name, amount, firstDate },
+          totalMonths,
+        );*/
+        const items = createInstallments(
+          {
+            name,
+            amount,
+            firstDate,
+            bankType: bankMode,
+          },
           totalMonths,
         );
 
         expenses.push(...items);
       } else {
+        /*expenses.push({
+          id: crypto.randomUUID(),
+          name,
+          amount,
+          firstDate,
+          type: "normal",
+        });*/
         expenses.push({
           id: crypto.randomUUID(),
           name,
           amount,
           firstDate,
           type: "normal",
+          bankType: bankMode,
         });
       }
     }
@@ -376,6 +430,10 @@ function renderExpense(expense, monthKey = null, view = "list") {
   const li = document.createElement("li");
   li.classList.add("grid");
 
+  if (expense.bankType === "sub") {
+    li.classList.add("sub-bank");
+  }
+
   // 月別金額調整の確認
   let displayAmount = expense.amount;
   if (expense.isRecurring && monthKey) {
@@ -385,11 +443,27 @@ function renderExpense(expense, monthKey = null, view = "list") {
     }
   }
 
-  li.innerHTML = `
+  /*li.innerHTML = `
         <span class="top-left">${escapeHTML(expense.name)}</span>
         <span class="bottom-left">毎月${escapeHTML(day)}日</span>
         <span class="right" data-expense-id="${expense.id}" data-month-key="${monthKey || ""}">${escapeHTML(displayAmount.toLocaleString())}<small>円</small></span>
-    `;
+    `;*/
+
+  li.innerHTML = `
+    <span class="top-left ${expense.bankType === "sub" ? "sub-bank-text" : ""}">
+      ${escapeHTML(expense.name)}
+    </span>
+
+    <span class="bottom-left">
+      毎月${escapeHTML(day)}日
+    </span>
+
+    <span class="right ${expense.bankType === "sub" ? "sub-bank-text" : ""}"
+          data-expense-id="${expense.id}"
+          data-month-key="${monthKey || ""}">
+      ${escapeHTML(displayAmount.toLocaleString())}<small>円</small>
+    </span>
+`;
 
   // 毎月タブ（recurring view）では右側の金額表示を非表示にする
   const rightSpan = li.querySelector(".right");
@@ -418,6 +492,8 @@ function renderExpense(expense, monthKey = null, view = "list") {
       formMode = "normal";
       editingId = expense.id;
     }
+    bankMode = expense.bankType || "main";
+    applyBankMode();
 
     applyFormMode();
 
@@ -657,6 +733,8 @@ function renderList(targetEl, mode = "normal", view = "list", data = expenses) {
       const ul = document.createElement("ul");
       let total = 0;
 
+      let mainTotal = 0;
+
       if (view === "list") {
         const [year, month] = key.split("-");
         title.textContent = `${year}年${month}月`;
@@ -666,6 +744,10 @@ function renderList(targetEl, mode = "normal", view = "list", data = expenses) {
           const li = renderExpense(exp, key, "list");
           ul.appendChild(li);
           total += exp.amount || 0;
+
+          if (exp.bankType !== "sub") {
+            mainTotal += exp.amount || 0;
+          }
         });
       } else if (view === "split") {
         const expense = items[0];
@@ -695,7 +777,14 @@ function renderList(targetEl, mode = "normal", view = "list", data = expenses) {
       totalDiv.className = "total";
 
       if (view === "list") {
-        totalDiv.innerHTML = `<span class="label1">合計 ：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>`;
+        //totalDiv.innerHTML = `<span class="label1">合計 ：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>`;
+        totalDiv.innerHTML = `
+  <span class="label1">合計：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>
+
+  <br>
+
+  <span class="label1">主銀行：</span>${escapeHTML(mainTotal.toLocaleString())}<span class="label2"> 円</span>
+`;
       }
 
       if (view === "split") {
@@ -837,4 +926,5 @@ function generateDisplayData(baseExpenses) {
 // 初期描画
 // =======================================
 applyFormMode();
+applyBankMode();
 renderAllLists();
