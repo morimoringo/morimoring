@@ -365,6 +365,17 @@ small {
   border-top: none;
 }
 
+.box .total .main {
+  color: #c354a4;
+  background-color: #111213;
+  border-radius: 6px;
+  margin-bottom: 0.2rem;
+  padding: 0.2rem 0.3rem;
+  width: 3.5rem;
+  height: 2rem;
+  font-size: 1rem;
+}
+
 /*月別合計*/
 .total {
   align-items: center;
@@ -396,7 +407,7 @@ small {
   align-items: center;
   text-align: end;
   color: #df67bd;
-} 
+}
 
 /* 空のときのメッセージ */
 .empty-message {
