@@ -354,6 +354,7 @@ form.addEventListener("submit", (e) => {
             name,
             amount,
             firstDate,
+            bankType: bankMode,
           };
         }
       }
@@ -779,11 +780,8 @@ function renderList(targetEl, mode = "normal", view = "list", data = expenses) {
       if (view === "list") {
         //totalDiv.innerHTML = `<span class="label1">合計 ：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>`;
         totalDiv.innerHTML = `
-  <span class="label1">合計：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>
-
-  <br>
-
-  <span class="label1">主銀行：</span>${escapeHTML(mainTotal.toLocaleString())}<span class="label2"> 円</span>
+          <span class="main">（${escapeHTML(mainTotal.toLocaleString())}）</span>
+          <span class="label1">合計：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>
 `;
       }
 
@@ -891,7 +889,7 @@ function generateDisplayData(baseExpenses) {
     }
   });
 
-  // 毎月　
+  // 毎月
   recurringExpenses.forEach((rec) => {
     for (let i = 0; i < 3; i++) {
       const d = new Date(
