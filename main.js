@@ -918,7 +918,7 @@ function generateDisplayData(baseExpenses) {
   });
 
   return result;
-}
+} 
 
 // =======================================
 // 初期描画
