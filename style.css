@@ -43,15 +43,15 @@ body {
   transform: translateX(-50%);
   background-color: rgb(21, 19, 43);
   color: white;
-  padding: 12px 24px;
+  padding: 9px 20px;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 1.05rem;
   opacity: 0;
   transition: all 0.5s ease; /* スライド＆フェード用 */
   z-index: 1000;
 }
 .message.show {
-  top: 2.2rem;
+  top: 1.9rem;
   opacity: 1;
 }
 
@@ -124,6 +124,33 @@ button {
   width: 3.5rem;
   height: 2rem;
   font-size: 1rem;
+}
+
+.submit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bank-btn {
+  padding: 0.3rem 0.56rem;
+  padding-left: 0.97rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 1.2rem;
+  letter-spacing: 0.28rem;
+}
+/* 主バンク */
+.bank-btn.main {
+  color: #183519;
+  background-color: #0c0d0e;
+}
+/* 副バンク */
+.bank-btn.sub {
+  color: #51c255;
+  background-color: #1c1d1f;
 }
 
 #mode {
@@ -387,4 +414,9 @@ small {
 #end-date.disabled {
   opacity: 0.4;
   pointer-events: none;
+}
+
+/*副バンク*/
+.sub-bank-text {
+  color: #51c255;
 }
