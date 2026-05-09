@@ -891,7 +891,7 @@ function generateDisplayData(baseExpenses) {
     }
   });
 
-  // 毎月
+  // 毎月　
   recurringExpenses.forEach((rec) => {
     for (let i = 0; i < 3; i++) {
       const d = new Date(
