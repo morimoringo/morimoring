@@ -365,6 +365,10 @@ small {
   border-top: none;
 }
 
+/*月別合計*/
+.total {
+  align-items: center;
+}
 .box .total .main {
   color: #c354a4;
   background-color: #111213;
@@ -374,11 +378,6 @@ small {
   width: 3.5rem;
   height: 2rem;
   font-size: 1rem;
-}
-
-/*月別合計*/
-.total {
-  align-items: center;
 }
 .box .total .label1 {
   opacity: 0.9;
@@ -399,6 +398,16 @@ small {
   opacity: 1;
   font-size: 1.2rem;
   color: #95ccff;
+}
+.box .total .range {
+  color: #5ea2d0;
+  background-color: #111213;
+  border-radius: 6px;
+  margin-bottom: 0.2rem;
+  padding: 0.2rem 0.3rem;
+  width: 3.5rem;
+  height: 2rem;
+  font-size: 1rem;
 }
 /*分別合計*/
 .split-period {
