@@ -650,9 +650,20 @@ function renderExpense(expense, monthKey = null, view = "list") {
 }
 
 function formatRemainingInstallment(expense) {
-  if (!expense.parentId) return 0;
+  if (!expense || !expense.parentId) return 0;
 
-  return expenses.filter((e) => e.parentId === expense.parentId).length;
+  const today = new Date();
+  const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  return expenses.filter((e) => {
+    if (e.parentId !== expense.parentId) return false;
+
+    const d = new Date(e.firstDate);
+
+    const itemMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+
+    return itemMonth >= currentMonth;
+  }).length;
 }
 
 // renderList の該当部分
@@ -720,97 +731,144 @@ function renderList(targetEl, mode = "normal", view = "list", data = expenses) {
     }
   }
 
-  Object.keys(grouped)
-    .sort()
-    .forEach((key) => {
-      const items = grouped[key];
+  const keys = Object.keys(grouped);
 
-      const box = document.createElement("div");
-      box.classList.add("box");
+  // =========================
+  // グループ順ソート
+  // =========================
+  if (view === "split") {
+    // 分割タブ：残り回数順
+    keys.sort((a, b) => {
+      const expenseA = grouped[a]?.[0];
+      const expenseB = grouped[b]?.[0];
 
-      const title = document.createElement("span");
-      title.classList.add("box-title");
+      const remainA = formatRemainingInstallment(expenseA);
+      const remainB = formatRemainingInstallment(expenseB);
 
-      const ul = document.createElement("ul");
-      let total = 0;
+      return remainA - remainB;
+    });
+  } else {
+    // 月順
+    keys.sort();
+  }
 
-      let mainTotal = 0;
+  keys.forEach((key) => {
+    const items = [...grouped[key]];
 
-      if (view === "list") {
-        const [year, month] = key.split("-");
-        title.textContent = `${year}年${month}月`;
+    // =========================
+    // normal/list のみ日付順
+    // =========================
+    if (view === "list") {
+      items.sort((a, b) => {
+        const dayA = Number(a.firstDate?.split("-")[2] || 0);
+        const dayB = Number(b.firstDate?.split("-")[2] || 0);
 
-        // undefined を含む可能性があるためフィルタリングしてから描画
-        items.filter(Boolean).forEach((exp) => {
-          const li = renderExpense(exp, key, "list");
-          ul.appendChild(li);
-          total += exp.amount || 0;
+        return dayA - dayB;
+      });
+    }
 
-          if (exp.bankType !== "sub") {
-            mainTotal += exp.amount || 0;
-          }
-        });
-      } else if (view === "split") {
-        const expense = items[0];
-        if (!expense) return; // items が空の場合はスキップ
+    const box = document.createElement("div");
+    box.classList.add("box");
 
-        // li は 1 つだけ
-        const li = renderExpense(expense, null, "split");
+    const title = document.createElement("span");
+    title.classList.add("box-title");
+
+    const ul = document.createElement("ul");
+    let total = 0;
+
+    let mainTotal = 0;
+
+    if (view === "list") {
+      const [year, month] = key.split("-");
+      title.textContent = `${year}年${month}月`;
+
+      // undefined を含む可能性があるためフィルタリングしてから描画
+      items.filter(Boolean).forEach((exp) => {
+        const li = renderExpense(exp, key, "list");
         ul.appendChild(li);
+        total += exp.amount || 0;
 
-        // 分割ビューではタイトルを表示しない（非表示）
-        title.style.display = "none";
-      }
+        if (exp.bankType !== "sub") {
+          mainTotal += exp.amount || 0;
+        }
+      });
+    } else if (view === "split") {
+      const expense = items[0];
+      if (!expense) return; // items が空の場合はスキップ
 
-      box.appendChild(title);
-      const details = document.createElement("div");
-      details.classList.add("details");
-      details.appendChild(ul);
-      box.appendChild(details);
+      // li は 1 つだけ
+      const li = renderExpense(expense, null, "split");
+      ul.appendChild(li);
 
-      // 分割ビューでは折り畳み不可にする（常に展開）
-      if (view === "split") {
-        details.style.maxHeight = "1000px";
-        box.classList.add("open");
-      }
+      // 分割ビューではタイトルを表示しない（非表示）
+      title.style.display = "none";
+    }
 
-      const totalDiv = document.createElement("div");
-      totalDiv.className = "total";
+    box.appendChild(title);
+    const details = document.createElement("div");
+    details.classList.add("details");
+    details.appendChild(ul);
+    box.appendChild(details);
 
-      if (view === "list") {
-        //totalDiv.innerHTML = `<span class="label1">合計 ：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>`;
-        totalDiv.innerHTML = `
+    // 分割ビューでは折り畳み不可にする（常に展開）
+    if (view === "split") {
+      details.style.maxHeight = "1000px";
+      box.classList.add("open");
+    }
+
+    const totalDiv = document.createElement("div");
+    totalDiv.className = "total";
+
+    if (view === "list") {
+      //totalDiv.innerHTML = `<span class="label1">合計 ：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>`;
+      totalDiv.innerHTML = `
           <span class="main">（${escapeHTML(mainTotal.toLocaleString())}）</span>
           <span class="label1">合計：</span>${escapeHTML(total.toLocaleString())}<span class="label2"> 円</span>
 `;
-      }
+    }
 
-      if (view === "split") {
-        const expense = items[0];
-        const remaining = formatRemainingInstallment(expense);
+    if (view === "split") {
+      const expense = items[0];
+      const remaining = formatRemainingInstallment(expense);
 
-        totalDiv.innerHTML = `
-                <span class="split-period">残り${remaining}回</span>
-            `;
-      }
+      const sortedItems = [...items].sort(
+        (a, b) => new Date(a.firstDate) - new Date(b.firstDate),
+      );
 
-      box.appendChild(totalDiv);
+      const first = sortedItems[0];
+      const last = sortedItems[sortedItems.length - 1];
 
-      // 折り畳みは split ビューでは無効
-      if (view !== "split") {
-        title.addEventListener("click", () => {
-          if (box.classList.contains("open")) {
-            details.style.maxHeight = null;
-            box.classList.remove("open");
-          } else {
-            details.style.maxHeight = details.scrollHeight + "px";
-            box.classList.add("open");
-          }
-        });
-      }
+      const firstDate = new Date(first.firstDate);
+      const lastDate = new Date(last.firstDate);
 
-      targetEl.appendChild(box);
-    });
+      const periodText =
+        `${firstDate.getFullYear()}/${firstDate.getMonth() + 1}` +
+        `～` +
+        `${lastDate.getFullYear()}/${lastDate.getMonth() + 1}`;
+
+      totalDiv.innerHTML = `
+        <span class="range">${periodText}</span>
+        <span class="split-period">残り${remaining}回</span>
+      `;
+    }
+
+    box.appendChild(totalDiv);
+
+    // 折り畳みは split ビューでは無効
+    if (view !== "split") {
+      title.addEventListener("click", () => {
+        if (box.classList.contains("open")) {
+          details.style.maxHeight = null;
+          box.classList.remove("open");
+        } else {
+          details.style.maxHeight = details.scrollHeight + "px";
+          box.classList.add("open");
+        }
+      });
+    }
+
+    targetEl.appendChild(box);
+  });
 
   // 何も表示されなかった場合
   if (!targetEl.children.length) {
@@ -854,7 +912,11 @@ function renderRecurringList() {
     return;
   }
 
-  recurringExpenses.forEach((rec) => {
+  const sortedRecurring = [...recurringExpenses].sort((a, b) => {
+    return a.day - b.day;
+  });
+
+  sortedRecurring.forEach((rec) => {
     const box = document.createElement("div");
     box.classList.add("box", "open");
 
@@ -918,7 +980,7 @@ function generateDisplayData(baseExpenses) {
   });
 
   return result;
-} 
+}
 
 // =======================================
 // 初期描画
